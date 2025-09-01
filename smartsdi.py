@@ -35,6 +35,7 @@ from .resources import *
 from .smartsdi_dialog import SmartSDIDialog
 import os.path
 import tempfile
+import csv
 
 
 class SmartSDI:
@@ -54,6 +55,7 @@ class SmartSDI:
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
         locale = QSettings().value('locale/userLocale')[0:2]
+        self.token = QSettings().value('smartsdi/token')
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
@@ -167,7 +169,7 @@ class SmartSDI:
         icon_path = self.plugin_dir +'/icon.png'
         self.add_action(
             icon_path,
-            text=self.tr(u'Pobierz działki i budynki'),
+            text=self.tr(u'Znajdź i pobierz dane'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
@@ -192,8 +194,92 @@ class SmartSDI:
         self.dlg.BBright.setText(str(bbox.xMaximum()))
         self.dlg.BBleft.setText(str(bbox.xMinimum()))
         self.dlg.BBepsg.setText(epsg)
+        
+    def save_token(self):
+        self.token=self.dlg.tokenEdit.text()
+        QSettings().setValue('smartsdi/token', self.token)
+
  
-    def load(self,path,layer):
+    def read_data_from_file(self,filepath):
+        """
+        Reads key-label pairs from a CSV file.
+        """
+        data = []
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f, fieldnames=['teryt','nazwa'])
+                for row in reader:
+                    data.append(row)
+        except FileNotFoundError:
+            QgsMessageLog.logMessage(f"Nie znaleziono pliku {filepath}", 'SmartSDI', Qgis.Critical)
+        except Exception as e:
+            QgsMessageLog.logMessage(f"Bład czytania pliku {e}", 'SmartSDI', Qgis.Critical)
+        return data
+        
+    def populate_combobox_woj(self):
+            data_filepath = self.plugin_dir+"/woj.list"
+            woj = self.read_data_from_file(data_filepath)
+            self.dlg.comboBoxWoj.addItem('wybierz')
+            for item in woj:
+                display_text = f"{item['nazwa']} ({item['teryt']})"
+                self.dlg.comboBoxWoj.addItem(display_text, item['teryt'])
+                
+    def populate_combobox_pow(self):
+            data_filepath = self.plugin_dir+"/pow.list"
+            idx=self.dlg.comboBoxWoj.currentIndex()
+            ter2 = self.dlg.comboBoxWoj.itemData(idx)
+            self.dlg.comboBoxPow.clear()
+            pow = self.read_data_from_file(data_filepath)
+            self.dlg.comboBoxPow.addItem('wybierz')
+            for item in pow:
+                if(ter2 and item['teryt'].startswith(ter2)):
+                    display_text = f"{item['nazwa']} ({item['teryt']})"
+                    self.dlg.comboBoxPow.addItem(display_text, item['teryt'])
+                    
+    def populate_combobox_gmi(self):
+            data_filepath = self.plugin_dir+"/gmi.list"
+            idx=self.dlg.comboBoxPow.currentIndex()
+            ter4 = self.dlg.comboBoxPow.itemData(idx)
+            self.dlg.comboBoxGmi.clear()
+            gmi = self.read_data_from_file(data_filepath)
+            self.dlg.comboBoxGmi.addItem('wybierz')
+            for item in gmi:
+                if(ter4 and item['teryt'].startswith(ter4)):
+                    display_text = f"{item['nazwa']} ({item['teryt']})"
+                    self.dlg.comboBoxGmi.addItem(display_text, item['teryt'])
+                    
+    def populate_combobox_obr(self):
+            data_filepath = self.plugin_dir+"/obr.list"
+            idx=self.dlg.comboBoxGmi.currentIndex()
+            ter = self.dlg.comboBoxGmi.itemData(idx)
+            if(ter):
+                if(int(ter[2])>=6):
+                    ter=ter[0:4]
+                else:
+                    ter=ter[0:6]
+            self.dlg.comboBoxObr.clear()
+            gmi = self.read_data_from_file(data_filepath)
+            self.dlg.comboBoxObr.addItem('wybierz')
+            for item in gmi:
+                if(ter and item['teryt'].startswith(ter)):
+                    display_text = f"{item['nazwa']} ({item['teryt']})"
+                    self.dlg.comboBoxObr.addItem(display_text, item['teryt'])
+                    
+    def populate_combobox_adv(self):
+            data_filepath = self.plugin_dir+"/gr.list"
+            gr = self.read_data_from_file(data_filepath)
+            self.dlg.comboBoxGr.addItem('wybierz grupę rejestrową')
+            for item in gr:
+                display_text = f"{item['nazwa']} ({item['teryt']})"
+                self.dlg.comboBoxGr.addItem(display_text, item['teryt'])
+            data_filepath = self.plugin_dir+"/kl.list"
+            kl = self.read_data_from_file(data_filepath)
+            self.dlg.comboBoxKl.addItem('wybierz klasoużytek')
+            for item in kl:
+                display_text = f"{item['nazwa']} ({item['teryt']})"
+                self.dlg.comboBoxKl.addItem(display_text, item['teryt'])
+
+    def load(self,path,layer,srid=2180):
         """Loads the downloaded data as a new layer"""
         
         self.download_count+=1
@@ -201,12 +287,136 @@ class SmartSDI:
         vlayer = QgsVectorLayer(path, "SmartSDI "+layer,  "ogr")
         if not vlayer.isValid():
             QgsMessageLog.logMessage('Błąd wczytywania warstwy '+layer, name, Qgis.Warning)
+        elif vlayer.featureCount()==0:
+            self.iface.messageBar().pushMessage("Uwaga", "Brak wyników", level=Qgis.Warning)
+            QgsMessageLog.logMessage('Brak wyników '+layer, name, Qgis.Warning)
         else:
             QgsProject.instance().addMapLayer(vlayer)
             #load the associated style
             style=os.path.join(self.plugin_dir,layer+'.qml')
             vlayer.loadNamedStyle(style)
+            
+            crs = vlayer.crs()
+            crs.createFromId(srid)
+            vlayer.setCrs(crs,True)
+            
+            canvas = self.iface.mapCanvas()
+            extent = vlayer.extent()
+            canvas.setExtent(extent)
+            canvas.refresh()
+            
+            # Show Feature Count
+            root = QgsProject.instance().layerTreeRoot()
+            newLayerNode = root.findLayer(vlayer.id())
+            newLayerNode.setCustomProperty("showFeatureCount", True)
+            
             QgsMessageLog.logMessage('Wczytano warstwę '+name, 'SmartSDI', Qgis.Success)
+            
+    def szukaj(self):
+        idx = self.dlg.comboBoxGmi.currentIndex()
+        gmina = self.dlg.comboBoxGmi.itemData(idx)
+        idx = self.dlg.comboBoxObr.currentIndex()
+        obreb = self.dlg.comboBoxObr.itemData(idx)
+        dzialka = self.dlg.lineEditDz.text()
+        idx = self.dlg.comboBoxGr.currentIndex()
+        grupa = self.dlg.comboBoxGr.itemData(idx)
+        idx = self.dlg.comboBoxKl.currentIndex()
+        klasa = self.dlg.comboBoxKl.itemData(idx)
+        params={}
+        adv = 0;
+
+        if(obreb and dzialka):
+            params['teryt']=obreb
+            params['dzialka']=dzialka
+        elif(obreb):
+            params['teryt']=obreb
+        elif(gmina and dzialka):
+            params['teryt']=gmina
+            params['dzialka']=dzialka
+        elif(gmina):
+            params['teryt']=gmina
+        if(self.dlg.groupBoxPow.isChecked()):
+            adv = 1
+            pow_od = self.dlg.spinBoxPowOd.value()
+            pow_do = self.dlg.spinBoxPowDo.value()
+            params['pow_od']=str(pow_od)
+            params['pow_do']=str(pow_do)
+            if(self.dlg.checkBoxShape.isChecked()):
+               foremnosc = self.dlg.horizontalSliderShape.value()
+               params['foremnosc']=str(foremnosc)               
+        if(self.dlg.groupBoxZab.isChecked()):
+            adv = 1
+            if(self.dlg.radioButtonZab.isChecked()):
+                params['zabudowa']='1'
+                pow_zab_od = self.dlg.spinBoxPowZabOd.value()
+                pow_zab_do = self.dlg.spinBoxPowZabDo.value()
+                params['pow_zab_od']=str(pow_zab_od)
+                params['pow_zab_do']=str(pow_zab_do)
+            else:
+                params['zabudowa']='-1'
+                odl_zab = self.dlg.spinBoxOdlZab.value()
+                params['odl_zab']=str(odl_zab)
+        if(grupa): params['grupa']=grupa
+        if(klasa): params['klasa']=klasa
+        if('teryt' in params):
+            if(dzialka or grupa or klasa or adv):
+                url='https://smartsdi.pl/qgis/search.php?request=dzialka&token='+self.token
+                for p in params: url+='&'+p+'='+params[p]
+                QgsMessageLog.logMessage(url, 'SmartSDI', Qgis.Success)
+                self.searchRequest(url)
+            else:
+                self.iface.messageBar().pushMessage("Uwaga", "Wpisz numer działki lub ustaw zaawansowane parametry szukania", level=Qgis.Warning)
+        else:
+            self.iface.messageBar().pushMessage("Uwaga", "Wybierz gminę", level=Qgis.Warning)
+        
+    def searchRequest(self,url):
+        workingUrl = QUrl(url)
+        request = QNetworkRequest(workingUrl)
+        networkAccessManager = QgsNetworkAccessManager()
+        response = networkAccessManager.blockingGet(request)
+        status_code = response.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        #all OK
+        if status_code == 200:
+            #save data to temp file
+            dest = QgsProcessingParameterFileDestination(name='wyniki')
+            path = dest.generateTemporaryDestination()
+            print(path)
+            f = open(path, "wb")
+            f.write(response.content())
+            f.close()
+            #load temp file as new layer
+            self.load(path,'wyniki')
+        #HTTP status not OK - show the message
+        elif status_code == 403:
+            info=str(response.content(), 'utf-8')
+            self.iface.messageBar().pushMessage("Błąd", info, level=Qgis.Critical)
+        else:
+            QgsMessageLog.logMessage(response.errorString(), 'SmartSDI', Qgis.Warning)
+            
+        
+    def pobierz(self):
+        selectedLayer=self.dlg.layerList.currentLayer()
+        #use the BBOX
+        if selectedLayer is None:
+            epsg=self.dlg.BBepsg.text().replace('EPSG:','')
+            bbox=self.dlg.BBleft.text()
+            bbox+=','+self.dlg.BBbottom.text()
+            bbox+=','+self.dlg.BBright.text()
+            bbox+=','+self.dlg.BBtop.text()
+        #layer was selected - use it as a boundary for downloading
+        else:
+            epsg=selectedLayer.crs().authid().replace('EPSG:','')
+            features=selectedLayer.getFeatures()
+            for f in features:
+                bbox=f.geometry().asWkt()
+                break
+        #which data to download (parcels, buildings, addresses)
+        if(self.dlg.checkDz.isChecked()):
+            self.download(epsg,bbox,'dzialki')
+        if(self.dlg.checkBud.isChecked()):
+            self.download(epsg,bbox,'budynki')
+        if(self.dlg.checkAdr.isChecked()):
+            self.download(epsg,bbox,'adresy')
     
     def download(self,epsg,bbox,layer):
         """Downloads the data from the web service"""
@@ -243,7 +453,7 @@ class SmartSDI:
             f.write(response.content())
             f.close()
             #load temp file as new layer
-            self.load(path,layer)
+            self.load(path,layer,int(epsg))
         #HTTP status not OK - show the message
         elif status_code == 403:
             info=str(response.content(), 'utf-8')
@@ -260,38 +470,24 @@ class SmartSDI:
             self.first_start = False
             self.download_count = 0;
             self.dlg = SmartSDIDialog()
+            self.populate_combobox_woj()
+            self.populate_combobox_adv()
+            self.dlg.tokenEdit.setText(self.token)
+            self.dlg.comboBoxWoj.currentIndexChanged.connect(self.populate_combobox_pow)
+            self.dlg.comboBoxPow.currentIndexChanged.connect(self.populate_combobox_gmi)
+            self.dlg.comboBoxGmi.currentIndexChanged.connect(self.populate_combobox_obr)
+            self.dlg.button_box.clicked.connect(self.pobierz)
+            self.dlg.buttonBox2.clicked.connect(self.szukaj)
+            self.dlg.BBget.clicked.connect(self.bbox)
+            self.dlg.saveTokenButton.clicked.connect(self.save_token)
+            #filter the layer list - only lines and polygons
+            self.dlg.layerList.setFilters(QgsMapLayerProxyModel.PolygonLayer|QgsMapLayerProxyModel.LineLayer)
 
         # show the dialog
         self.dlg.show()
-        self.bbox()
-        self.dlg.BBget.clicked.connect(self.bbox)
-        #filter the layer list - only lines and polygons
-        self.dlg.layerList.setFilters(QgsMapLayerProxyModel.PolygonLayer|QgsMapLayerProxyModel.LineLayer)
+        self.bbox()   
         
-        # Run the dialog event loop
-        result = self.dlg.exec_()
-        # See if OK was pressed
-        if result:
-            selectedLayer=self.dlg.layerList.currentLayer()
-            #use the BBOX
-            if selectedLayer is None:
-                epsg=self.dlg.BBepsg.text().replace('EPSG:','')
-                bbox=self.dlg.BBleft.text()
-                bbox+=','+self.dlg.BBbottom.text()
-                bbox+=','+self.dlg.BBright.text()
-                bbox+=','+self.dlg.BBtop.text()
-            #layer was selected - use it as a boundary for downloading
-            else:
-                epsg=selectedLayer.crs().authid().replace('EPSG:','')
-                features=selectedLayer.getFeatures()
-                for f in features:
-                    bbox=f.geometry().asWkt()
-                    break
-            #which data to download (parcels, buildings, addresses)
-            if(self.dlg.checkDz.isChecked()):
-                self.download(epsg,bbox,'dzialki')
-            if(self.dlg.checkBud.isChecked()):
-                self.download(epsg,bbox,'budynki')
-            if(self.dlg.checkAdr.isChecked()):
-                self.download(epsg,bbox,'adresy')
+        
+        
+
 

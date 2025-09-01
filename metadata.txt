@@ -4,16 +4,16 @@
 
 [general]
 name=SmartSDI
-qgisMinimumVersion=3.22
-description=Wtyczka SmartSDI (Geo-System)
-	PL: Pobieranie danych wektorowych: działki, budynki, adresy
-	EN: Downloading vector data for Poland: parcels, buildings, addresses
-version=0.5
+qgisMinimumVersion=3.40
+description=SmartSDI plugin (Geo-System)
+	PL: Wyszukiwanie oraz pobieranie danych z ewidencji gruntów i budynków
+	EN: Search and download cadastral data in Poland
+version=0.9
 author=Geo-System
 email=geo-system@geo-system.com.pl
 
-about=PL: Wtyczka SmartSDI - pobieranie działek i budynków w postaci wektorowej z usługi Polish Cadaster Data Integration
-	EN: SmartSDI plugin - downloading vector data for Poland (parcels, buildings) from the Polish Cadaster Data Integration service
+about=PL: Wtyczka SmartSDI - zaawansowane wyszukiwanie działek ewidencyjnych oraz pobieranie danych (działki, budynki, adresy) w postaci wektorowej z usługi Polish Cadaster Data Integration
+		EN: SmartSDI plugin - advanced search for cadastral parcels in Poland, downloading vector data (parcels, buildings, addresses) from the Polish Cadaster Data Integration service
 
 tracker=https://github.com/geo-system/qgis-smartsdi/issues
 repository=https://github.com/geo-system/qgis-smartsdi
@@ -24,6 +24,7 @@ repository=https://github.com/geo-system/qgis-smartsdi
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
 changelog=
+	0.9 - zaawansowane wyszukiwanie działek
 	0.5 - zmiany w pobieraniu dla dużych poligonów
 	0.4 - raport dla działki dostępny dla warstwy z granicami działek
 	0.3 - dodanie pobrania danych w ramach przecięcia z warstwą liniową lub poligonową
@@ -31,13 +32,13 @@ changelog=
 	0.1 - utworzenie wtyczki
 
 # Tags are comma separated with spaces allowed
-tags=egib,ewidencja gruntów,działki,budynki,parcels,buildings,Poland,Polska,cadaster
+tags=egib,ewidencja gruntów,działki,budynki,parcels,buildings,Poland,Polska,cadaster,search,download
 
 homepage=https://smartsdi.pl/qgis
 category=Vector
 icon=icon.png
 # experimental flag
-experimental=True
+experimental=False
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
