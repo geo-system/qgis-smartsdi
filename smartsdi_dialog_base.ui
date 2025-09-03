@@ -719,6 +719,9 @@
         <height>22</height>
        </rect>
       </property>
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
      </widget>
      <widget class="QComboBox" name="comboBoxKl">
       <property name="geometry">
@@ -779,7 +782,7 @@
        <x>10</x>
        <y>20</y>
        <width>351</width>
-       <height>151</height>
+       <height>171</height>
       </rect>
      </property>
      <property name="title">
@@ -804,11 +807,11 @@
         <x>10</x>
         <y>90</y>
         <width>331</width>
-        <height>61</height>
+        <height>71</height>
        </rect>
       </property>
       <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt;Wersja &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#5e5e5e;&quot;&gt;DEMO&lt;/span&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt; posiada ograniczenia liczby obiektów:&lt;br/&gt;pobieranie: 1000 na zapytanie; 10 000 na dobę&lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#5e5e5e; vertical-align:super;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt;&lt;br/&gt;wyszukiwanie: 100 na zapytanie; 1000 na dobę&lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#5e5e5e; vertical-align:super;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-size:4pt; font-style:italic; color:#5e5e5e;&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-size:7pt; font-weight:600; font-style:italic; color:#767676;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-size:7pt; font-style:italic; color:#767676;&quot;&gt; w ramach jednego adresu IP&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt;Wersja &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#5e5e5e;&quot;&gt;DEMO&lt;/span&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt; posiada pełną funkcjonalność, ograniczenie dotyczy liczby zwracanych obiektów:&lt;br/&gt;pobieranie: 1000 na zapytanie; 10 000 na dobę&lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#5e5e5e; vertical-align:super;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt;&lt;br/&gt;wyszukiwanie: 100 na zapytanie; 1000 na dobę&lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#5e5e5e; vertical-align:super;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-size:4pt; font-style:italic; color:#5e5e5e;&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-size:7pt; font-weight:600; font-style:italic; color:#767676;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-size:7pt; font-style:italic; color:#767676;&quot;&gt; w ramach jednego adresu IP&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -891,7 +894,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>190</y>
+       <y>200</y>
        <width>351</width>
        <height>141</height>
       </rect>

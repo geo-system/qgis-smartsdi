@@ -55,7 +55,7 @@ class SmartSDI:
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
         locale = QSettings().value('locale/userLocale')[0:2]
-        self.token = QSettings().value('smartsdi/token')
+        self.token = QSettings().value('smartsdi/token') or ''
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
@@ -200,16 +200,17 @@ class SmartSDI:
         QSettings().setValue('smartsdi/token', self.token)
 
  
-    def read_data_from_file(self,filepath):
+    def read_data_from_file(self,file):
         """
         Reads key-label pairs from a CSV file.
         """
-        data = []
+        filepath = self.plugin_dir+"/"+file+".list"
+        data = {}
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f, fieldnames=['teryt','nazwa'])
+                reader = csv.DictReader(f, fieldnames=['key','value'])
                 for row in reader:
-                    data.append(row)
+                    data[row['key']]=row['value']
         except FileNotFoundError:
             QgsMessageLog.logMessage(f"Nie znaleziono pliku {filepath}", 'SmartSDI', Qgis.Critical)
         except Exception as e:
@@ -217,39 +218,48 @@ class SmartSDI:
         return data
         
     def populate_combobox_woj(self):
-            data_filepath = self.plugin_dir+"/woj.list"
-            woj = self.read_data_from_file(data_filepath)
+            if(not self.woj): woj = self.read_data_from_file("woj")
             self.dlg.comboBoxWoj.addItem('wybierz')
-            for item in woj:
-                display_text = f"{item['nazwa']} ({item['teryt']})"
-                self.dlg.comboBoxWoj.addItem(display_text, item['teryt'])
+            for key, value in woj.items():
+                display_text = f"{value} ({key})"
+                self.dlg.comboBoxWoj.addItem(display_text, key)
                 
     def populate_combobox_pow(self):
-            data_filepath = self.plugin_dir+"/pow.list"
             idx=self.dlg.comboBoxWoj.currentIndex()
             ter2 = self.dlg.comboBoxWoj.itemData(idx)
             self.dlg.comboBoxPow.clear()
-            pow = self.read_data_from_file(data_filepath)
+            if(not self.pow): pow = self.read_data_from_file("pow")
+            if(not self.sa_grupy): self.sa_grupy = self.read_data_from_file("sa_grupy")
+            if(not self.sa_uzytki): self.sa_uzytki = self.read_data_from_file("sa_uzytki")
             self.dlg.comboBoxPow.addItem('wybierz')
-            for item in pow:
-                if(ter2 and item['teryt'].startswith(ter2)):
-                    display_text = f"{item['nazwa']} ({item['teryt']})"
-                    self.dlg.comboBoxPow.addItem(display_text, item['teryt'])
+            for key, value in pow.items():
+                if(ter2 and key.startswith(ter2)):
+                    display_text = f"{value} ({key})"
+                    self.dlg.comboBoxPow.addItem(display_text, key)
                     
     def populate_combobox_gmi(self):
-            data_filepath = self.plugin_dir+"/gmi.list"
             idx=self.dlg.comboBoxPow.currentIndex()
             ter4 = self.dlg.comboBoxPow.itemData(idx)
             self.dlg.comboBoxGmi.clear()
-            gmi = self.read_data_from_file(data_filepath)
+            
+            if(ter4 in self.sa_grupy): self.dlg.comboBoxGr.setEnabled(1)
+            else:
+                self.dlg.comboBoxGr.setEnabled(0)
+                self.dlg.comboBoxGr.setCurrentIndex(0)
+            
+            if(ter4 in self.sa_uzytki): self.dlg.comboBoxKl.setEnabled(1)
+            else:
+                self.dlg.comboBoxKl.setEnabled(0)
+                self.dlg.comboBoxKl.setCurrentIndex(0)
+            
+            if(not self.gmi): gmi = self.read_data_from_file("gmi")
             self.dlg.comboBoxGmi.addItem('wybierz')
-            for item in gmi:
-                if(ter4 and item['teryt'].startswith(ter4)):
-                    display_text = f"{item['nazwa']} ({item['teryt']})"
-                    self.dlg.comboBoxGmi.addItem(display_text, item['teryt'])
+            for key, value in gmi.items():
+                if(ter4 and key.startswith(ter4)):
+                    display_text = f"{value} ({key})"
+                    self.dlg.comboBoxGmi.addItem(display_text, key)
                     
     def populate_combobox_obr(self):
-            data_filepath = self.plugin_dir+"/obr.list"
             idx=self.dlg.comboBoxGmi.currentIndex()
             ter = self.dlg.comboBoxGmi.itemData(idx)
             if(ter):
@@ -258,26 +268,24 @@ class SmartSDI:
                 else:
                     ter=ter[0:6]
             self.dlg.comboBoxObr.clear()
-            gmi = self.read_data_from_file(data_filepath)
+            if(not self.obr): obr = self.read_data_from_file("obr")
             self.dlg.comboBoxObr.addItem('wybierz')
-            for item in gmi:
-                if(ter and item['teryt'].startswith(ter)):
-                    display_text = f"{item['nazwa']} ({item['teryt']})"
-                    self.dlg.comboBoxObr.addItem(display_text, item['teryt'])
+            for key, value in obr.items():
+                if(ter and key.startswith(ter)):
+                    display_text = f"{value} ({key})"
+                    self.dlg.comboBoxObr.addItem(display_text, key)
                     
     def populate_combobox_adv(self):
-            data_filepath = self.plugin_dir+"/gr.list"
-            gr = self.read_data_from_file(data_filepath)
+            if(not self.gr): gr = self.read_data_from_file("gr")
             self.dlg.comboBoxGr.addItem('wybierz grupę rejestrową')
-            for item in gr:
-                display_text = f"{item['nazwa']} ({item['teryt']})"
-                self.dlg.comboBoxGr.addItem(display_text, item['teryt'])
-            data_filepath = self.plugin_dir+"/kl.list"
-            kl = self.read_data_from_file(data_filepath)
+            for key, value in gr.items():
+                display_text = f"{value} ({key})"
+                self.dlg.comboBoxGr.addItem(display_text, key)
+            if(not self.kl): kl = self.read_data_from_file("kl")
             self.dlg.comboBoxKl.addItem('wybierz klasoużytek')
-            for item in kl:
-                display_text = f"{item['nazwa']} ({item['teryt']})"
-                self.dlg.comboBoxKl.addItem(display_text, item['teryt'])
+            for key, value in kl.items():
+                display_text = f"{value} ({key})"
+                self.dlg.comboBoxKl.addItem(display_text, key)
 
     def load(self,path,layer,srid=2180):
         """Loads the downloaded data as a new layer"""
@@ -286,10 +294,10 @@ class SmartSDI:
         name='SmartSDI '+layer+str(self.download_count)
         vlayer = QgsVectorLayer(path, "SmartSDI "+layer,  "ogr")
         if not vlayer.isValid():
-            QgsMessageLog.logMessage('Błąd wczytywania warstwy '+layer, name, Qgis.Warning)
+            QgsMessageLog.logMessage('Błąd wczytywania warstwy '+layer, 'SmartSDI', Qgis.Warning)
         elif vlayer.featureCount()==0:
             self.iface.messageBar().pushMessage("Uwaga", "Brak wyników", level=Qgis.Warning)
-            QgsMessageLog.logMessage('Brak wyników '+layer, name, Qgis.Warning)
+            QgsMessageLog.logMessage('Brak wyników '+layer, 'SmartSDI', Qgis.Warning)
         else:
             QgsProject.instance().addMapLayer(vlayer)
             #load the associated style
@@ -362,7 +370,7 @@ class SmartSDI:
             if(dzialka or grupa or klasa or adv):
                 url='https://smartsdi.pl/qgis/search.php?request=dzialka&token='+self.token
                 for p in params: url+='&'+p+'='+params[p]
-                QgsMessageLog.logMessage(url, 'SmartSDI', Qgis.Success)
+                #QgsMessageLog.logMessage(url, 'SmartSDI', Qgis.Success)
                 self.searchRequest(url)
             else:
                 self.iface.messageBar().pushMessage("Uwaga", "Wpisz numer działki lub ustaw zaawansowane parametry szukania", level=Qgis.Warning)
@@ -469,10 +477,20 @@ class SmartSDI:
         if self.first_start == True:
             self.first_start = False
             self.download_count = 0;
+            #slowniki do comboboxow
+            self.woj = {}
+            self.pow = {}
+            self.gmi = {}
+            self.obr = {}
+            self.kl = {}
+            self.gr = {}
+            self.sa_grupy = {}
+            self.sa_uzytki = {} 
             self.dlg = SmartSDIDialog()
             self.populate_combobox_woj()
             self.populate_combobox_adv()
             self.dlg.tokenEdit.setText(self.token)
+            #sygnaly przy zmianie/kliknieciu
             self.dlg.comboBoxWoj.currentIndexChanged.connect(self.populate_combobox_pow)
             self.dlg.comboBoxPow.currentIndexChanged.connect(self.populate_combobox_gmi)
             self.dlg.comboBoxGmi.currentIndexChanged.connect(self.populate_combobox_obr)
