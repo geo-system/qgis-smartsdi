@@ -8,7 +8,7 @@ qgisMinimumVersion=3.40
 description=SmartSDI plugin (Geo-System)
 	PL: Wyszukiwanie oraz pobieranie danych z ewidencji gruntów i budynków
 	EN: Search and download cadastral data in Poland
-version=0.9
+version=0.91
 author=Geo-System
 email=geo-system@geo-system.com.pl
 
@@ -24,6 +24,7 @@ repository=https://github.com/geo-system/qgis-smartsdi
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
 changelog=
+	0.91 - grupy/klasy tylko w obsługiwanych powiatach, poprawki drobnych błędów
 	0.9 - zaawansowane wyszukiwanie działek
 	0.5 - zmiany w pobieraniu dla dużych poligonów
 	0.4 - raport dla działki dostępny dla warstwy z granicami działek
