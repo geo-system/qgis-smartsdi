@@ -1,3 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 *.qml linguist-vendored=true
+*.list linguist-language=CSV
