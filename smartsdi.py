@@ -26,8 +26,10 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtNetwork import QNetworkRequest
 
-from qgis.core import QgsProject, QgsMessageLog, Qgis, QgsNetworkAccessManager, QgsVectorLayer, QgsWkbTypes, QgsProcessingParameterFileDestination, QgsMapLayerProxyModel
+from qgis.core import QgsProject, QgsMessageLog, Qgis, QgsNetworkAccessManager, QgsVectorLayer, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProviderRegistry, QgsWkbTypes, QgsRectangle, QgsProcessingParameterFileDestination, QgsMapLayerProxyModel
 from qgis.gui import QgsMessageBar
+
+from urllib.parse import urlencode
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -73,6 +75,9 @@ class SmartSDI:
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
         self.first_start = None
+        self.sublayer_order = {
+            'pog': ['ObszarStandardowDostepnosciInfrastrukturySpolecznej', 'ObszarZabudowySrodmiejskiej', 'ObszarUzupelnieniaZabudowy','StrefaPlanistyczna','AktPlanowaniaPrzestrzennego'],
+        }
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -212,9 +217,9 @@ class SmartSDI:
                 for row in reader:
                     data[row['key']]=row['value']
         except FileNotFoundError:
-            QgsMessageLog.logMessage(f"Nie znaleziono pliku {filepath}", 'SmartSDI', Qgis.Critical)
+            QgsMessageLog.logMessage(f"Nie znaleziono pliku {filepath}", 'SmartSDI', Qgis.MessageLevel.Critical)
         except Exception as e:
-            QgsMessageLog.logMessage(f"Bład czytania pliku {e}", 'SmartSDI', Qgis.Critical)
+            QgsMessageLog.logMessage(f"Bład czytania pliku {e}", 'SmartSDI', Qgis.MessageLevel.Critical)
         return data
         
     def populate_combobox_woj(self):
@@ -287,38 +292,116 @@ class SmartSDI:
                 display_text = f"{value} ({key})"
                 self.dlg.comboBoxKl.addItem(display_text, key)
 
-    def load(self,path,layer,srid=2180):
-        """Loads the downloaded data as a new layer"""
-        
-        self.download_count+=1
-        name='SmartSDI '+layer+str(self.download_count)
-        vlayer = QgsVectorLayer(path, "SmartSDI "+layer,  "ogr")
-        if not vlayer.isValid():
-            QgsMessageLog.logMessage('Błąd wczytywania warstwy '+layer, 'SmartSDI', Qgis.Warning)
-        elif vlayer.featureCount()==0:
-            self.iface.messageBar().pushMessage("Uwaga", "Brak wyników", level=Qgis.Warning)
-            QgsMessageLog.logMessage('Brak wyników '+layer, 'SmartSDI', Qgis.Warning)
+    def _list_sublayers(self, path):
+        """Zwraca listę krotek (uri, nazwa_podwarstwy) dla pliku."""
+        result = []
+        registry = QgsProviderRegistry.instance()
+
+        if hasattr(registry, 'querySublayers'):
+            # QGIS >= 3.22 oraz QGIS 4
+            for sub in registry.querySublayers(path):
+                if sub.providerKey() == 'ogr':
+                    result.append((sub.uri(), sub.name()))
         else:
-            QgsProject.instance().addMapLayer(vlayer)
-            #load the associated style
-            style=os.path.join(self.plugin_dir,layer+'.qml')
-            vlayer.loadNamedStyle(style)
-            
-            crs = vlayer.crs()
-            crs.createFromId(srid)
-            vlayer.setCrs(crs,True)
-            
-            canvas = self.iface.mapCanvas()
-            extent = vlayer.extent()
+            # starsze QGIS 3.x
+            tmp = QgsVectorLayer(path, 'tmp', 'ogr')
+            if tmp.isValid():
+                seen = set()
+                for s in tmp.dataProvider().subLayers():
+                    parts = s.split(QgsDataProvider.SUBLAYER_SEPARATOR)
+                    if len(parts) > 1 and parts[1] not in seen:
+                        seen.add(parts[1])
+                        result.append((f"{path}|layername={parts[1]}", parts[1]))
+
+        if not result:
+            # plik bez podwarstw - wczytaj po staremu
+            result.append((path, ''))
+        return result
+
+    def _apply_style(self, vlayer, layer, sub_name, allow_generic):
+        """Szuka stylu <layer>_<podwarstwa>.qml, a w razie braku <layer>.qml."""
+        candidates = []
+        if sub_name:
+            candidates.append(f"{layer}_{sub_name}.qml")
+        if allow_generic:
+            candidates.append(f"{layer}.qml")
+        for fname in candidates:
+            style = os.path.join(self.plugin_dir, fname)
+            if os.path.exists(style):
+                vlayer.loadNamedStyle(style)
+                return
+
+    def load(self, path, layer, srid=2180):
+        """Loads the downloaded data as new layer(s)"""
+        self.download_count += 1
+        name = 'SmartSDI ' + layer + str(self.download_count)
+        project = QgsProject.instance()
+        crs = QgsCoordinateReferenceSystem(f"EPSG:{srid}")
+
+        # 1. Wczytaj wszystkie podwarstwy
+        loaded = []
+        for uri, sub_name in self._list_sublayers(path):
+            display = "SmartSDI " + layer + (f" - {sub_name}" if sub_name else "")
+            vlayer = QgsVectorLayer(uri, display, "ogr")
+            if not vlayer.isValid():
+                QgsMessageLog.logMessage('Błąd wczytywania warstwy ' + display,
+                                         'SmartSDI', Qgis.MessageLevel.Warning)
+                continue
+            if vlayer.featureCount() == 0:
+                QgsMessageLog.logMessage('Brak obiektów w ' + display,
+                                         'SmartSDI', Qgis.MessageLevel.Info)
+                continue
+            if not vlayer.crs().isValid():
+                vlayer.setCrs(crs)
+            loaded.append((vlayer, sub_name))
+
+        if not loaded:
+            self.iface.messageBar().pushMessage("Uwaga", "Brak wyników",
+                                                level=Qgis.MessageLevel.Warning)
+            QgsMessageLog.logMessage('Brak wyników ' + layer, 'SmartSDI',
+                                     Qgis.MessageLevel.Warning)
+            return
+
+        # 2. Dodaj do projektu (grupa, jeśli podwarstw jest więcej niż jedna)
+        root = project.layerTreeRoot()
+        group = root.insertGroup(0, name) if len(loaded) > 1 else None
+
+        canvas = self.iface.mapCanvas()
+        #transform = QgsCoordinateTransform(crs, canvas.mapSettings().destinationCrs(), project)
+        extent = QgsRectangle()
+        extent.setMinimal()
+        
+        order = self.sublayer_order.get(layer, [])
+        loaded.sort(key=lambda t: order.index(t[1]) if t[1] in order else len(order))
+
+        for vlayer, sub_name in loaded:
+            self._apply_style(vlayer, layer, sub_name, allow_generic=(len(loaded) == 1))
+
+            if group is None:
+                project.addMapLayer(vlayer)
+                node = root.findLayer(vlayer.id())
+            else:
+                project.addMapLayer(vlayer, False)
+                node = group.addLayer(vlayer)
+
+            if node is not None:
+                node.setCustomProperty("showFeatureCount", True)
+
+            try:
+                tr = QgsCoordinateTransform(vlayer.crs(),
+                                            canvas.mapSettings().destinationCrs(),
+                                            project)
+                extent.combineExtentWith(tr.transformBoundingBox(vlayer.extent()))
+            except Exception:
+                extent.combineExtentWith(vlayer.extent())
+
+            QgsMessageLog.logMessage('Wczytano warstwę ' + vlayer.name(),
+                                     'SmartSDI', Qgis.MessageLevel.Success)
+
+        # 3. Przybliż do łącznego zasięgu
+        if not extent.isNull():
             canvas.setExtent(extent)
             canvas.refresh()
-            
-            # Show Feature Count
-            root = QgsProject.instance().layerTreeRoot()
-            newLayerNode = root.findLayer(vlayer.id())
-            newLayerNode.setCustomProperty("showFeatureCount", True)
-            
-            QgsMessageLog.logMessage('Wczytano warstwę '+name, 'SmartSDI', Qgis.Success)
             
     def szukaj(self):
         idx = self.dlg.comboBoxGmi.currentIndex()
@@ -370,19 +453,19 @@ class SmartSDI:
             if(dzialka or grupa or klasa or adv):
                 url='https://smartsdi.pl/qgis/search.php?request=dzialka&token='+self.token
                 for p in params: url+='&'+p+'='+params[p]
-                #QgsMessageLog.logMessage(url, 'SmartSDI', Qgis.Success)
+                #QgsMessageLog.logMessage(url, 'SmartSDI', Qgis.MessageLevel.Success)
                 self.searchRequest(url)
             else:
-                self.iface.messageBar().pushMessage("Uwaga", "Wpisz numer działki lub ustaw zaawansowane parametry szukania", level=Qgis.Warning)
+                self.iface.messageBar().pushMessage("Uwaga", "Wpisz numer działki lub ustaw zaawansowane parametry szukania", level=Qgis.MessageLevel.Warning)
         else:
-            self.iface.messageBar().pushMessage("Uwaga", "Wybierz gminę", level=Qgis.Warning)
+            self.iface.messageBar().pushMessage("Uwaga", "Wybierz gminę", level=Qgis.MessageLevel.Warning)
         
     def searchRequest(self,url):
         workingUrl = QUrl(url)
         request = QNetworkRequest(workingUrl)
         networkAccessManager = QgsNetworkAccessManager()
         response = networkAccessManager.blockingGet(request)
-        status_code = response.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        status_code = response.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
         #all OK
         if status_code == 200:
             #save data to temp file
@@ -397,9 +480,9 @@ class SmartSDI:
         #HTTP status not OK - show the message
         elif status_code == 403:
             info=str(response.content(), 'utf-8')
-            self.iface.messageBar().pushMessage("Błąd", info, level=Qgis.Critical)
+            self.iface.messageBar().pushMessage("Błąd", info, level=Qgis.MessageLevel.Critical)
         else:
-            QgsMessageLog.logMessage(response.errorString(), 'SmartSDI', Qgis.Warning)
+            QgsMessageLog.logMessage(response.errorString(), 'SmartSDI', Qgis.MessageLevel.Warning)
             
         
     def pobierz(self):
@@ -425,20 +508,24 @@ class SmartSDI:
             self.download(epsg,bbox,'budynki')
         if(self.dlg.checkAdr.isChecked()):
             self.download(epsg,bbox,'adresy')
+        if(self.dlg.checkPog.isChecked()):
+            self.download(epsg,bbox,'pog')
     
     def download(self,epsg,bbox,layer):
         """Downloads the data from the web service"""
         
         #use POST request for long bboxes (large polygons/lines)
         if len(bbox)>512:
-            url='https://smartsdi.pl/qgis/download.php'
-            postData = QByteArray()
-            postData.append("layer").append('=').append(layer).append("&")
-            postData.append("epsg").append('=').append(epsg).append("&")
-            postData.append("bbox").append('=').append(bbox).append("&")
+            url='https://smartsdi.pl/qgis/download.php?token='+self.token
+            params = {
+                "layer": layer,
+                "epsg": epsg,
+                "bbox": bbox
+            }
+            postData = QByteArray(urlencode(params).encode("utf-8"))
             post=1
         else:
-            url='https://smartsdi.pl/qgis/download.php?layer='+layer+'&epsg='+epsg+'&bbox='+bbox
+            url='https://smartsdi.pl/qgis/download.php?token='+self.token+'&layer='+layer+'&epsg='+epsg+'&bbox='+bbox
             post=0
         
         workingUrl = QUrl(url)
@@ -446,11 +533,14 @@ class SmartSDI:
         networkAccessManager = QgsNetworkAccessManager()
         #POST
         if post:
+            request.setAttribute(QNetworkRequest.Attribute.Http2AllowedAttribute, False)
+            request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader,
+                  "application/x-www-form-urlencoded")
             response = networkAccessManager.blockingPost(request,postData)
         #GET for short requests
         else:
             response = networkAccessManager.blockingGet(request)
-        status_code = response.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        status_code = response.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
         #all OK
         if status_code == 200:
             #save data to temp file
@@ -465,9 +555,12 @@ class SmartSDI:
         #HTTP status not OK - show the message
         elif status_code == 403:
             info=str(response.content(), 'utf-8')
-            self.iface.messageBar().pushMessage("Błąd", info, level=Qgis.Critical)
+            self.iface.messageBar().pushMessage("Błąd", info, level=Qgis.MessageLevel.Critical)
+        elif status_code == 404:
+            info=str(response.content(), 'utf-8')
+            self.iface.messageBar().pushMessage("Błąd", info, level=Qgis.MessageLevel.Critical)
         else:
-            QgsMessageLog.logMessage(response.errorString(), 'SmartSDI', Qgis.Warning)
+            QgsMessageLog.logMessage(response.errorString(), 'SmartSDI', Qgis.MessageLevel.Warning)
 
     def run(self):
         """Run method that performs all the real work"""

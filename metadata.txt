@@ -5,10 +5,11 @@
 [general]
 name=SmartSDI
 qgisMinimumVersion=3.40
+qgisMaximumVersion=4.99
 description=SmartSDI plugin (Geo-System)
 	PL: Wyszukiwanie oraz pobieranie danych z ewidencji gruntów i budynków
 	EN: Search and download cadastral data in Poland
-version=0.91
+version=0.95
 author=Geo-System
 email=geo-system@geo-system.com.pl
 
@@ -24,6 +25,7 @@ repository=https://github.com/geo-system/qgis-smartsdi
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
 changelog=
+	0.95 - pobieranie POG, wsparcie dla QGIS 4
 	0.91 - grupy/klasy tylko w obsługiwanych powiatach, poprawki drobnych błędów
 	0.9 - zaawansowane wyszukiwanie działek
 	0.5 - zmiany w pobieraniu dla dużych poligonów

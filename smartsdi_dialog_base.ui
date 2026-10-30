@@ -56,7 +56,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="tab_3">
     <property name="accessibleName">
@@ -239,6 +239,13 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QCheckBox" name="checkPog">
+         <property name="text">
+          <string>Plan ogólny</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </widget>
@@ -275,7 +282,7 @@
      <widget class="QLineEdit" name="lineEditDz">
       <property name="geometry">
        <rect>
-        <x>80</x>
+        <x>100</x>
         <y>110</y>
         <width>231</width>
         <height>22</height>
@@ -301,7 +308,7 @@
      <widget class="QComboBox" name="comboBoxObr">
       <property name="geometry">
        <rect>
-        <x>80</x>
+        <x>100</x>
         <y>85</y>
         <width>231</width>
         <height>22</height>
@@ -327,7 +334,7 @@
      <widget class="QComboBox" name="comboBoxGmi">
       <property name="geometry">
        <rect>
-        <x>80</x>
+        <x>100</x>
         <y>60</y>
         <width>231</width>
         <height>22</height>
@@ -337,7 +344,7 @@
      <widget class="QComboBox" name="comboBoxWoj">
       <property name="geometry">
        <rect>
-        <x>80</x>
+        <x>100</x>
         <y>10</y>
         <width>231</width>
         <height>22</height>
@@ -347,7 +354,7 @@
      <widget class="QComboBox" name="comboBoxPow">
       <property name="geometry">
        <rect>
-        <x>80</x>
+        <x>100</x>
         <y>35</y>
         <width>231</width>
         <height>22</height>
@@ -359,7 +366,7 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>71</width>
+        <width>81</width>
         <height>21</height>
        </rect>
       </property>
@@ -556,9 +563,9 @@
      <widget class="QRadioButton" name="radioButtonNiezab">
       <property name="geometry">
        <rect>
-        <x>20</x>
+        <x>10</x>
         <y>20</y>
-        <width>101</width>
+        <width>111</width>
         <height>22</height>
        </rect>
       </property>
@@ -572,7 +579,7 @@
      <widget class="QRadioButton" name="radioButtonZab">
       <property name="geometry">
        <rect>
-        <x>20</x>
+        <x>10</x>
         <y>45</y>
         <width>101</width>
         <height>22</height>
@@ -636,9 +643,9 @@
      <widget class="QLabel" name="label_23">
       <property name="geometry">
        <rect>
-        <x>140</x>
+        <x>130</x>
         <y>22</y>
-        <width>141</width>
+        <width>151</width>
         <height>16</height>
        </rect>
       </property>
@@ -684,9 +691,9 @@
      <widget class="QLabel" name="label_25">
       <property name="geometry">
        <rect>
-        <x>140</x>
+        <x>130</x>
         <y>47</y>
-        <width>81</width>
+        <width>91</width>
         <height>16</height>
        </rect>
       </property>
@@ -811,7 +818,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt;Wersja &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#5e5e5e;&quot;&gt;DEMO&lt;/span&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt; posiada pełną funkcjonalność, ograniczenie dotyczy liczby zwracanych obiektów:&lt;br/&gt;pobieranie: 1000 na zapytanie; 10 000 na dobę&lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#5e5e5e; vertical-align:super;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt;&lt;br/&gt;wyszukiwanie: 100 na zapytanie; 1000 na dobę&lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#5e5e5e; vertical-align:super;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-size:4pt; font-style:italic; color:#5e5e5e;&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-size:7pt; font-weight:600; font-style:italic; color:#767676;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-size:7pt; font-style:italic; color:#767676;&quot;&gt; w ramach jednego adresu IP&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt;Wersja &lt;/span&gt;&lt;span style=&quot; font-weight:600; color:#5e5e5e;&quot;&gt;DEMO&lt;/span&gt;&lt;span style=&quot; color:#5e5e5e;&quot;&gt; posiada pełną funkcjonalność, ograniczenie dotyczy liczby zwracanych obiektów*&lt;br/&gt;pobieranie: 1000 na zapytanie; 10 000 na dobę&lt;br/&gt;wyszukiwanie: 250 na zapytanie; 2500 na dobę&lt;/span&gt;&lt;span style=&quot; font-size:4pt; font-style:italic; color:#5e5e5e;&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;span style=&quot; font-size:7pt; font-weight:600; font-style:italic; color:#767676;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-size:7pt; font-style:italic; color:#767676;&quot;&gt; w ramach jednego adresu IP&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -896,7 +903,7 @@
        <x>10</x>
        <y>200</y>
        <width>351</width>
-       <height>141</height>
+       <height>151</height>
       </rect>
      </property>
      <property name="title">
@@ -906,9 +913,9 @@
       <property name="geometry">
        <rect>
         <x>100</x>
-        <y>60</y>
+        <y>75</y>
         <width>201</width>
-        <height>13</height>
+        <height>16</height>
        </rect>
       </property>
       <property name="text">
@@ -919,9 +926,9 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>60</y>
+        <y>75</y>
         <width>47</width>
-        <height>13</height>
+        <height>16</height>
        </rect>
       </property>
       <property name="text">
@@ -932,9 +939,9 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>80</y>
+        <y>95</y>
         <width>47</width>
-        <height>13</height>
+        <height>16</height>
        </rect>
       </property>
       <property name="text">
@@ -945,9 +952,9 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>100</y>
+        <y>115</y>
         <width>101</width>
-        <height>13</height>
+        <height>16</height>
        </rect>
       </property>
       <property name="text">
@@ -958,9 +965,9 @@
       <property name="geometry">
        <rect>
         <x>100</x>
-        <y>80</y>
+        <y>95</y>
         <width>201</width>
-        <height>13</height>
+        <height>16</height>
        </rect>
       </property>
       <property name="text">
@@ -977,9 +984,9 @@
       <property name="geometry">
        <rect>
         <x>100</x>
-        <y>100</y>
+        <y>115</y>
         <width>141</width>
-        <height>13</height>
+        <height>16</height>
        </rect>
       </property>
       <property name="text">
@@ -1016,7 +1023,7 @@
       <property name="geometry">
        <rect>
         <x>250</x>
-        <y>65</y>
+        <y>80</y>
         <width>81</width>
         <height>51</height>
        </rect>
