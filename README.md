@@ -8,8 +8,10 @@ Dane do pobrania:
 - działki ewidencyjne (EGiB[^1])
 - budynki ewidencyjne (EGiB)
 - adresy (PRG[^2])
+- plany ogólne gmin (POG)[^3]
 [^1]:Dane EGiB (Ewidencja Gruntów i Budynków) pochodzą z usług sieciowych publikowanych przez powiaty. Aktualizacja danych odbywa się min. 2 razy w tygodniu.
 [^2]:Dane PRG (Państwowy Rejestr Granic) z GUGiK. Aktualizacja odbywa się codziennie.
+[^3]:Plany opublikowane na stronach dzienników urzedowych województw
 
 ### Wyszukiwanie działek
 Możliwe jest znalezienie konkretnej działki poprzez wybranie województwa, powiatu i gminy (+ ew. obrębu) oraz wpisanie numeru działki.
@@ -19,9 +21,9 @@ Istnieje również możliwość znalezienia listy działek spełniających nast�
 - występowanie zabudowy na działce
 - powierzchnia zabudowy na działce (minimalna, maksymalna)
 - minimalna odległość działki od budynków
-- typ własności[^3] (grupa rejestrowa np. Skarb Państwa, osoba fizyczna)
-- klasoużytek[^3] (np. las, teren mieszkaniowy, grunt rolny)
-[^3]:Dostępne dla wybranych powiatów
+- typ własności[^4] (grupa rejestrowa np. Skarb Państwa, osoba fizyczna)
+- klasoużytek[^4] (np. las, teren mieszkaniowy, grunt rolny)
+[^4]:Dostępne dla wybranych powiatów
 
 ## Dodatkowe informacje:
 - strona domowa: [smartsdi.pl/qgis](https://smartsdi.pl/qgis/)
