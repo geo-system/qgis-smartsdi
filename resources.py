@@ -6,12 +6,7 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-try:
-    # Najpierw próbujemy importować moduł z PyQt6 (dla QGIS 4)
-    from PyQt6 import QtCore
-except ImportError:
-    # Jeśli PyQt6 nie występuje, używamy PyQt5 (dla QGIS 3)
-    from PyQt5 import QtCore
+from qgis.PyQt import QtCore
 
 qt_resource_data = b"\
 \x00\x00\x04\x0a\

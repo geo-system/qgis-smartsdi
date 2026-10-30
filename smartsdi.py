@@ -592,7 +592,7 @@ class SmartSDI:
             self.dlg.BBget.clicked.connect(self.bbox)
             self.dlg.saveTokenButton.clicked.connect(self.save_token)
             #filter the layer list - only lines and polygons
-            self.dlg.layerList.setFilters(QgsMapLayerProxyModel.PolygonLayer|QgsMapLayerProxyModel.LineLayer)
+            self.dlg.layerList.setFilters(QgsMapLayerProxyModel.Filter.PolygonLayer|QgsMapLayerProxyModel.Filter.LineLayer)
 
         # show the dialog
         self.dlg.show()
