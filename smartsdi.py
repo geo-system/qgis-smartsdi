@@ -26,13 +26,13 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtNetwork import QNetworkRequest
 
-from qgis.core import QgsProject, QgsMessageLog, Qgis, QgsNetworkAccessManager, QgsVectorLayer, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProviderRegistry, QgsWkbTypes, QgsRectangle, QgsProcessingParameterFileDestination, QgsMapLayerProxyModel
+from qgis.core import QgsProject, QgsMessageLog, Qgis, QgsNetworkAccessManager, QgsVectorLayer, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsDataProvider, QgsProviderRegistry, QgsWkbTypes, QgsRectangle, QgsProcessingParameterFileDestination, QgsMapLayerProxyModel
 from qgis.gui import QgsMessageBar
 
 from urllib.parse import urlencode
 
 # Initialize Qt resources from file resources.py
-from .resources import *
+from . import resources
 # Import the code for the dialog
 from .smartsdi_dialog import SmartSDIDialog
 import os.path
@@ -567,7 +567,7 @@ class SmartSDI:
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
+        if self.first_start:
             self.first_start = False
             self.download_count = 0;
             #slowniki do comboboxow
